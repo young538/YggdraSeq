@@ -108,17 +108,16 @@ int CSeqMonitorFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     ModifyStyle(0, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 
-    // CMFCTabCtrl 생성 (하단 탭, OneNote 스타일)
+    // CMFCTabCtrl 생성 (상단 탭, VS Code 하단 패널 스타일)
     CRect rect;
     GetClientRect(rect);
-    if (!m_tabCtrl.Create(CMFCTabCtrl::STYLE_3D_ONENOTE, rect, this, 1,
-        CMFCTabCtrl::LOCATION_BOTTOM))
+    if (!m_tabCtrl.Create(CMFCTabCtrl::STYLE_3D_VS2005, rect, this, 1,
+        CMFCTabCtrl::LOCATION_TOP))
     {
         TRACE0("Failed to create CMFCTabCtrl\n");
         return -1;
     }
-    m_tabCtrl.SetFlatFrame(TRUE);
-    m_tabCtrl.AutoDestroyWindow(FALSE);
+    m_tabCtrl.AutoDestroyWindow(FALSE);    
 
     // 탭 패널 생성 및 등록
     if (!createTabPanes())
@@ -154,10 +153,11 @@ BOOL CSeqMonitorFrame::createTabPanes()
 {
     CRect rect(0, 0, 100, 100);
     const DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+    LPCTSTR pszClass = AfxRegisterWndClass(0);
 
     // 상태 목록 패널
-    if (!m_paneStateList.Create(nullptr, _T("State List"), dwStyle,
-        rect, this, IDR_PANE_STATE_LIST))
+    if (!m_paneStateList.Create(pszClass, _T("State List"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_STATE_LIST))
     {
         TRACE0("Failed to create State List Pane\n");
         return FALSE;
@@ -165,26 +165,17 @@ BOOL CSeqMonitorFrame::createTabPanes()
     m_tabCtrl.AddTab(&m_paneStateList, _T("State List"));
 
     // 인터락 패널
-    if (!m_paneInterlock.Create(nullptr, _T("Interlock"), dwStyle,
-        rect, this, IDR_PANE_INTERLOCK))
+    if (!m_paneInterlock.Create(pszClass, _T("Interlock"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_INTERLOCK))
     {
         TRACE0("Failed to create Interlock Pane\n");
         return FALSE;
     }
     m_tabCtrl.AddTab(&m_paneInterlock, _T("Interlock"));
 
-    // 시퀀스 디버그 패널
-    if (!m_paneDebug.Create(nullptr, _T("Sequence Debug"), dwStyle,
-        rect, this, IDR_PANE_SEQUENCE_DEBUG))
-    {
-        TRACE0("Failed to create Sequence Debug Pane\n");
-        return FALSE;
-    }
-    m_tabCtrl.AddTab(&m_paneDebug, _T("Sequence Debug"));
-
     // 로그 출력 패널
-    if (!m_paneLog.Create(nullptr, _T("Log Output"), dwStyle,
-        rect, this, IDR_PANE_LOG_OUTPUT))
+    if (!m_paneLog.Create(pszClass, _T("Log Output"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_LOG_OUTPUT))
     {
         TRACE0("Failed to create Log Output Pane\n");
         return FALSE;
@@ -192,8 +183,8 @@ BOOL CSeqMonitorFrame::createTabPanes()
     m_tabCtrl.AddTab(&m_paneLog, _T("Log Output"));
 
     // 전이 이력 패널
-    if (!m_paneTransition.Create(nullptr, _T("Transition Log"), dwStyle,
-        rect, this, IDR_PANE_TRANSITION_LOG))
+    if (!m_paneTransition.Create(pszClass, _T("Transition Log"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_TRANSITION_LOG))
     {
         TRACE0("Failed to create Transition Log Pane\n");
         return FALSE;
@@ -201,13 +192,22 @@ BOOL CSeqMonitorFrame::createTabPanes()
     m_tabCtrl.AddTab(&m_paneTransition, _T("Transition Log"));
 
     // 스레드 모니터 패널
-    if (!m_paneThread.Create(nullptr, _T("Thread Monitor"), dwStyle,
-        rect, this, IDR_PANE_THREAD_MONITOR))
+    if (!m_paneThread.Create(pszClass, _T("Thread Monitor"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_THREAD_MONITOR))
     {
         TRACE0("Failed to create Thread Monitor Pane\n");
         return FALSE;
     }
     m_tabCtrl.AddTab(&m_paneThread, _T("Thread Monitor"));
+
+    // 시퀀스 디버그 패널
+    if (!m_paneDebug.Create(pszClass, _T("Sequence Debug"), dwStyle,
+        rect, &m_tabCtrl, IDR_PANE_SEQUENCE_DEBUG))
+    {
+        TRACE0("Failed to create Sequence Debug Pane\n");
+        return FALSE;
+    }
+    m_tabCtrl.AddTab(&m_paneDebug, _T("Sequence Debug"));
 
     return TRUE;
 }

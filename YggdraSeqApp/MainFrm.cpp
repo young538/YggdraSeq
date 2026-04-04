@@ -110,10 +110,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     CDockingManager::SetDockingMode(DT_SMART);
     EnableDocking(CBRS_ALIGN_ANY);
 
-    // 상단 명령 툴바
+    // 상단 명령 버튼 바 (CWnd - 도킹 없이 고정 배치)
     m_commandToolBar.CreateToolBar(this);
-    m_commandToolBar.EnableDocking(CBRS_ALIGN_TOP);
-    DockPane(&m_commandToolBar, AFX_IDW_DOCKBAR_TOP);
 
     // 좌측 Activity Bar (CWnd - 도킹 없이 고정 배치)
     CRect barRect(0, 0, CActivityBar::BAR_WIDTH, 600);
@@ -142,7 +140,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     // View DLL 모니터 프레임 생성 (탭 패널 호스트)
     m_pMonitorFrame = new CSeqMonitorFrame();
-    m_pMonitorFrame->Create(nullptr, _T("Monitor"),
+    m_pMonitorFrame->Create(AfxRegisterWndClass(0), _T("Monitor"),
         WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
         CRect(0, 0, 100, 200), this, 0);
 
@@ -201,14 +199,12 @@ void CMainFrame::layoutChildren()
     if (clientRect.IsRectEmpty())
         return;
 
-    // 상단: 툴바 (CFrameWndEx가 자동 관리)
-    // 하단: 상태 바 (CFrameWndEx가 자동 관리)
-
-    // 사용 가능한 클라이언트 영역 계산
+    // 사용 가능한 클라이언트 영역 계산 (메뉴/상태바 제외)
     CRect availRect;
     RepositionBars(0, 0xFFFF, AFX_IDW_PANE_FIRST, CWnd::reposQuery, &availRect);
 
     int activityBarWidth = CActivityBar::BAR_WIDTH;
+    int commandBarHeight = COMMAND_BAR_HEIGHT;
     int monitorHeight = availRect.Height() / 3;  // 하단 1/3을 모니터에 할당
 
     // Activity Bar (좌측 고정)
@@ -220,8 +216,16 @@ void CMainFrame::layoutChildren()
 
     int mainLeft = availRect.left + activityBarWidth;
     int mainWidth = availRect.Width() - activityBarWidth;
-    int mainTop = availRect.top;
-    int mainHeight = availRect.Height() - monitorHeight;
+
+    // 상단 명령 버튼 바
+    if (m_commandToolBar.GetSafeHwnd() != nullptr)
+    {
+        m_commandToolBar.MoveWindow(mainLeft, availRect.top,
+            mainWidth, commandBarHeight);
+    }
+
+    int mainTop = availRect.top + commandBarHeight;
+    int mainHeight = availRect.Height() - commandBarHeight - monitorHeight;
 
     // 미믹 다이어그램 (좌측 60%)
     int mimicWidth = mainWidth * 6 / 10;
@@ -279,7 +283,7 @@ void CMainFrame::initializeSequences()
 
     // Load -> Align
     auto tLoadToAlign = std::make_unique<Transition>("Load", "Align");
-    tLoadToAlign->setGuard([&pLoad]() { return pLoad->getParams().empty(); });  // 간단한 가드
+    tLoadToAlign->setGuard([p = pLoad.get()]() { return p->getParams().empty(); });  // 간단한 가드
     pLoad->addTransition(std::move(tLoadToAlign));
 
     // Align -> Capture (스테이지 안정 시)
