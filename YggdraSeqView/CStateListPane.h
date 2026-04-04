@@ -35,7 +35,7 @@ namespace YggdraSeq
  * CSeqMonitorFrame에서 UI 스레드 메시지를 받아 갱신됩니다.
  * 각 엔진(스레드)의 현재 상태를 한 행으로 표시합니다.
  */
-class AFX_EXT_CLASS CStateListPane : public CDockablePane
+class AFX_EXT_CLASS CStateListPane : public CWnd
 {
     DECLARE_DYNAMIC(CStateListPane)
 

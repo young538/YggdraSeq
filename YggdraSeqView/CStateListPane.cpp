@@ -9,9 +9,9 @@
 namespace YggdraSeq
 {
 
-IMPLEMENT_DYNAMIC(CStateListPane, CDockablePane)
+IMPLEMENT_DYNAMIC(CStateListPane, CWnd)
 
-BEGIN_MESSAGE_MAP(CStateListPane, CDockablePane)
+BEGIN_MESSAGE_MAP(CStateListPane, CWnd)
     ON_WM_CREATE()
     ON_WM_SIZE()
     ON_WM_PAINT()
@@ -27,7 +27,7 @@ CStateListPane::~CStateListPane()
 
 int CStateListPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-    if (CDockablePane::OnCreate(lpCreateStruct) == -1)
+    if (CWnd::OnCreate(lpCreateStruct) == -1)
         return -1;
 
     // CListCtrl 생성 (Report 스타일)
@@ -50,7 +50,7 @@ int CStateListPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CStateListPane::OnSize(UINT nType, int cx, int cy)
 {
-    CDockablePane::OnSize(nType, cx, cy);
+    CWnd::OnSize(nType, cx, cy);
 
     // CListCtrl을 패널 영역에 맞게 리사이즈
     if (m_listCtrl.GetSafeHwnd() != nullptr)

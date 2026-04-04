@@ -36,7 +36,7 @@ namespace YggdraSeq
  *   스레드 B가 락 Y를 보유하고 락 X를 대기 중이면 데드락으로 판정합니다.
  *   간단한 2-스레드 순환 감지만 구현합니다.
  */
-class AFX_EXT_CLASS CThreadMonitorPane : public CDockablePane
+class AFX_EXT_CLASS CThreadMonitorPane : public CWnd
 {
     DECLARE_DYNAMIC(CThreadMonitorPane)
 

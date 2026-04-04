@@ -55,7 +55,7 @@ struct TransitionRecord
  *
  * 전이 이력을 시간순으로 기록하고, 필터링 및 CSV 내보내기를 제공합니다.
  */
-class AFX_EXT_CLASS CTransitionLogPane : public CDockablePane
+class AFX_EXT_CLASS CTransitionLogPane : public CWnd
 {
     DECLARE_DYNAMIC(CTransitionLogPane)
 

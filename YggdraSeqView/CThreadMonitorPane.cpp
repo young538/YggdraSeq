@@ -17,9 +17,9 @@
 namespace YggdraSeq
 {
 
-IMPLEMENT_DYNAMIC(CThreadMonitorPane, CDockablePane)
+IMPLEMENT_DYNAMIC(CThreadMonitorPane, CWnd)
 
-BEGIN_MESSAGE_MAP(CThreadMonitorPane, CDockablePane)
+BEGIN_MESSAGE_MAP(CThreadMonitorPane, CWnd)
     ON_WM_CREATE()
     ON_WM_SIZE()
     ON_WM_PAINT()
@@ -36,7 +36,7 @@ CThreadMonitorPane::~CThreadMonitorPane()
 
 int CThreadMonitorPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-    if (CDockablePane::OnCreate(lpCreateStruct) == -1)
+    if (CWnd::OnCreate(lpCreateStruct) == -1)
         return -1;
 
     const DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
@@ -56,7 +56,7 @@ int CThreadMonitorPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CThreadMonitorPane::OnSize(UINT nType, int cx, int cy)
 {
-    CDockablePane::OnSize(nType, cx, cy);
+    CWnd::OnSize(nType, cx, cy);
     if (m_listCtrl.GetSafeHwnd() != nullptr)
         m_listCtrl.MoveWindow(0, 0, cx, cy);
 }

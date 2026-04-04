@@ -14,9 +14,9 @@
 namespace YggdraSeq
 {
 
-IMPLEMENT_DYNAMIC(CSequenceDebugPane, CDockablePane)
+IMPLEMENT_DYNAMIC(CSequenceDebugPane, CWnd)
 
-BEGIN_MESSAGE_MAP(CSequenceDebugPane, CDockablePane)
+BEGIN_MESSAGE_MAP(CSequenceDebugPane, CWnd)
     ON_WM_CREATE()
     ON_WM_SIZE()
     ON_WM_PAINT()
@@ -32,7 +32,7 @@ CSequenceDebugPane::~CSequenceDebugPane()
 
 int CSequenceDebugPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-    if (CDockablePane::OnCreate(lpCreateStruct) == -1)
+    if (CWnd::OnCreate(lpCreateStruct) == -1)
         return -1;
 
     initializeControls();
@@ -41,7 +41,7 @@ int CSequenceDebugPane::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CSequenceDebugPane::OnSize(UINT nType, int cx, int cy)
 {
-    CDockablePane::OnSize(nType, cx, cy);
+    CWnd::OnSize(nType, cx, cy);
     layoutControls(cx, cy);
 }
 

@@ -162,9 +162,9 @@ struct TransitionEvalData
  *   4. UI 스레드에서 메시지 핸들러가 큐에서 데이터를 pop
  *   5. 해당 도킹 패널의 갱신 메서드 호출
  */
-class AFX_EXT_CLASS CSeqMonitorFrame : public CFrameWndEx, public ISequenceObserver
+class AFX_EXT_CLASS CSeqMonitorFrame : public CWnd, public ISequenceObserver
 {
-    DECLARE_DYNCREATE(CSeqMonitorFrame)
+    DECLARE_DYNAMIC(CSeqMonitorFrame)
 
 public:
     CSeqMonitorFrame();
@@ -245,11 +245,9 @@ public:
         const std::vector<InterlockCheckResult>& interlockResults) override;
 
 protected:
-    // MFC 오버라이드
-    virtual BOOL PreCreateWindow(CREATESTRUCT& cs) override;
-    virtual BOOL OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext) override;
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-    afx_msg void OnClose();
+    afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnDestroy();
 
     // 커스텀 메시지 핸들러 (UI 스레드에서 실행)
     afx_msg LRESULT OnSeqStateChanged(WPARAM wParam, LPARAM lParam);
@@ -266,29 +264,14 @@ protected:
 
 private:
     // ========================================================================
-    // 도킹 패널 생성
+    // 탭 패널 생성
     // ========================================================================
 
     /**
-     * @brief 모든 도킹 패널을 생성하고 VS Code 스타일 레이아웃으로 배치
+     * @brief CMFCTabCtrl에 모든 패널을 탭으로 생성/등록
      * @return TRUE = 성공
      */
-    BOOL createDockingPanes();
-
-    /**
-     * @brief 다크 테마 비주얼 매니저를 설정
-     */
-    void setupVisualManager();
-
-    /**
-     * @brief 도킹 레이아웃을 레지스트리에서 복원 (없으면 기본 레이아웃)
-     */
-    void loadDockingLayout();
-
-    /**
-     * @brief 도킹 레이아웃을 레지스트리에 저장
-     */
-    void saveDockingLayout();
+    BOOL createTabPanes();
 
     // ========================================================================
     // 스레드 안전 데이터 큐 (워커 스레드 -> UI 스레드)
@@ -306,9 +289,10 @@ private:
     std::mutex m_queueMutex;    ///< 모든 큐를 보호하는 뮤텍스
 
     // ========================================================================
-    // 도킹 패널 멤버
+    // 탭 컨트롤 및 패널 멤버
     // ========================================================================
 
+    CMFCTabCtrl m_tabCtrl;                  ///< 탭 컨트롤 (모든 패널을 탭으로 관리)
     CStateListPane m_paneStateList;         ///< 상태 목록 패널
     CInterlockPane m_paneInterlock;         ///< 인터락 패널
     CLogOutputPane m_paneLog;               ///< 로그 출력 패널

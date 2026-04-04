@@ -37,7 +37,7 @@ namespace YggdraSeq
  * - 경고 (Warning 위반): 노랑 배경
  * - 위반 (Critical/EMO): 빨강 배경
  */
-class AFX_EXT_CLASS CInterlockPane : public CDockablePane
+class AFX_EXT_CLASS CInterlockPane : public CWnd
 {
     DECLARE_DYNAMIC(CInterlockPane)
 

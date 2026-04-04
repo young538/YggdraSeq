@@ -54,7 +54,7 @@ struct LogEntry
  * 로그 메시지를 시간순으로 표시하고 필터링/검색 기능을 제공합니다.
  * 최대 로그 항목 수(MAX_LOG_ENTRIES)를 초과하면 오래된 항목을 자동 삭제합니다.
  */
-class AFX_EXT_CLASS CLogOutputPane : public CDockablePane
+class AFX_EXT_CLASS CLogOutputPane : public CWnd
 {
     DECLARE_DYNAMIC(CLogOutputPane)
 

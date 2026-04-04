@@ -140,10 +140,11 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_statusBar.SetPaneInfo(5, ID_STATUSBAR_ERRORS, SBPS_NORMAL, 80);
     m_statusBar.SetPaneInfo(6, ID_STATUSBAR_INTERLOCKS, SBPS_NORMAL, 100);
 
-    // View DLL 모니터 프레임 생성 (도킹 패널 호스트)
+    // View DLL 모니터 프레임 생성 (탭 패널 호스트)
     m_pMonitorFrame = new CSeqMonitorFrame();
     m_pMonitorFrame->Create(nullptr, _T("Monitor"),
-        WS_CHILD | WS_VISIBLE, CRect(0, 0, 100, 200), this);
+        WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+        CRect(0, 0, 100, 200), this, 0);
 
     // 시퀀스 엔진 초기화
     initializeSequences();

@@ -19,15 +19,16 @@ namespace YggdraSeq
 // MFC 동적 생성 매크로
 // ============================================================================
 
-IMPLEMENT_DYNCREATE(CSeqMonitorFrame, CFrameWndEx)
+IMPLEMENT_DYNAMIC(CSeqMonitorFrame, CWnd)
 
 // ============================================================================
 // 메시지 맵
 // ============================================================================
 
-BEGIN_MESSAGE_MAP(CSeqMonitorFrame, CFrameWndEx)
+BEGIN_MESSAGE_MAP(CSeqMonitorFrame, CWnd)
     ON_WM_CREATE()
-    ON_WM_CLOSE()
+    ON_WM_SIZE()
+    ON_WM_DESTROY()
     ON_MESSAGE(WM_SEQ_STATE_CHANGED, &CSeqMonitorFrame::OnSeqStateChanged)
     ON_MESSAGE(WM_SEQ_ENGINE_STATUS, &CSeqMonitorFrame::OnSeqEngineStatus)
     ON_MESSAGE(WM_SEQ_INTERLOCK_VIOLATION, &CSeqMonitorFrame::OnSeqInterlockViolation)
@@ -97,159 +98,118 @@ void CSeqMonitorFrame::attachEngines(const std::vector<SequenceEngine*>& engines
 }
 
 // ============================================================================
-// MFC 프레임 생성
+// CWnd 생성
 // ============================================================================
-
-BOOL CSeqMonitorFrame::PreCreateWindow(CREATESTRUCT& cs)
-{
-    if (!CFrameWndEx::PreCreateWindow(cs))
-        return FALSE;
-
-    cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
-    cs.lpszClass = AfxRegisterWndClass(0);
-    return TRUE;
-}
-
-BOOL CSeqMonitorFrame::OnCreateClient(LPCREATESTRUCT lpcs, CCreateContext* pContext)
-{
-    return CFrameWndEx::OnCreateClient(lpcs, pContext);
-}
 
 int CSeqMonitorFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
-    if (CFrameWndEx::OnCreate(lpCreateStruct) == -1)
+    if (CWnd::OnCreate(lpCreateStruct) == -1)
         return -1;
 
-    // 다크 테마 비주얼 매니저 설정
-    setupVisualManager();
+    ModifyStyle(0, WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 
-    // 전 방향 도킹 활성화
-    EnableDocking(CBRS_ALIGN_ANY);
-
-    // 도킹 패널 생성 및 레이아웃 배치
-    if (!createDockingPanes())
+    // CMFCTabCtrl 생성 (하단 탭, OneNote 스타일)
+    CRect rect;
+    GetClientRect(rect);
+    if (!m_tabCtrl.Create(CMFCTabCtrl::STYLE_3D_ONENOTE, rect, this, 1,
+        CMFCTabCtrl::LOCATION_BOTTOM))
+    {
+        TRACE0("Failed to create CMFCTabCtrl\n");
         return -1;
+    }
+    m_tabCtrl.SetFlatFrame(TRUE);
+    m_tabCtrl.AutoDestroyWindow(FALSE);
 
-    // 저장된 도킹 레이아웃 복원 시도
-    loadDockingLayout();
+    // 탭 패널 생성 및 등록
+    if (!createTabPanes())
+        return -1;
 
     return 0;
 }
 
-void CSeqMonitorFrame::OnClose()
+void CSeqMonitorFrame::OnSize(UINT nType, int cx, int cy)
 {
-    // 도킹 레이아웃 저장
-    saveDockingLayout();
+    CWnd::OnSize(nType, cx, cy);
 
+    // CMFCTabCtrl을 클라이언트 영역에 맞게 리사이즈
+    if (m_tabCtrl.GetSafeHwnd() != nullptr)
+    {
+        m_tabCtrl.MoveWindow(0, 0, cx, cy);
+    }
+}
+
+void CSeqMonitorFrame::OnDestroy()
+{
     // 엔진 연결 해제
     detachEngine();
 
-    CFrameWndEx::OnClose();
+    CWnd::OnDestroy();
 }
 
 // ============================================================================
-// 도킹 패널 생성 및 레이아웃
+// 탭 패널 생성
 // ============================================================================
 
-BOOL CSeqMonitorFrame::createDockingPanes()
+BOOL CSeqMonitorFrame::createTabPanes()
 {
-    // --- 중앙 메인 탭에 배치할 패널들 (State/Interlock/Debug) ---
+    CRect rect(0, 0, 100, 100);
+    const DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 
-    // 상태 목록 패널 (좌측 상단 영역)
-    if (!m_paneStateList.Create(_T("State List"), this, CRect(0, 0, 300, 200),
-        TRUE, IDR_PANE_STATE_LIST,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 상태 목록 패널
+    if (!m_paneStateList.Create(nullptr, _T("State List"), dwStyle,
+        rect, this, IDR_PANE_STATE_LIST))
     {
         TRACE0("Failed to create State List Pane\n");
         return FALSE;
     }
-    m_paneStateList.EnableDocking(CBRS_ALIGN_ANY);
-    DockPane(&m_paneStateList, AFX_IDW_DOCKBAR_RIGHT);
+    m_tabCtrl.AddTab(&m_paneStateList, _T("State List"));
 
-    // 인터락 패널 (State List와 탭 그룹)
-    if (!m_paneInterlock.Create(_T("Interlock"), this, CRect(0, 0, 300, 200),
-        TRUE, IDR_PANE_INTERLOCK,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 인터락 패널
+    if (!m_paneInterlock.Create(nullptr, _T("Interlock"), dwStyle,
+        rect, this, IDR_PANE_INTERLOCK))
     {
         TRACE0("Failed to create Interlock Pane\n");
         return FALSE;
     }
-    m_paneInterlock.EnableDocking(CBRS_ALIGN_ANY);
-    m_paneInterlock.AttachToTabWnd(&m_paneStateList, DM_SHOW, TRUE);
+    m_tabCtrl.AddTab(&m_paneInterlock, _T("Interlock"));
 
-    // 시퀀스 디버그 패널 (State List와 탭 그룹)
-    if (!m_paneDebug.Create(_T("Sequence Debug"), this, CRect(0, 0, 300, 200),
-        TRUE, IDR_PANE_SEQUENCE_DEBUG,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 시퀀스 디버그 패널
+    if (!m_paneDebug.Create(nullptr, _T("Sequence Debug"), dwStyle,
+        rect, this, IDR_PANE_SEQUENCE_DEBUG))
     {
         TRACE0("Failed to create Sequence Debug Pane\n");
         return FALSE;
     }
-    m_paneDebug.EnableDocking(CBRS_ALIGN_ANY);
-    m_paneDebug.AttachToTabWnd(&m_paneStateList, DM_SHOW, TRUE);
+    m_tabCtrl.AddTab(&m_paneDebug, _T("Sequence Debug"));
 
-    // --- 하단 패널 탭 (Log/Transition/Thread) ---
-
-    // 로그 출력 패널 (하단 영역)
-    if (!m_paneLog.Create(_T("Log Output"), this, CRect(0, 0, 200, 150),
-        TRUE, IDR_PANE_LOG_OUTPUT,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 로그 출력 패널
+    if (!m_paneLog.Create(nullptr, _T("Log Output"), dwStyle,
+        rect, this, IDR_PANE_LOG_OUTPUT))
     {
         TRACE0("Failed to create Log Output Pane\n");
         return FALSE;
     }
-    m_paneLog.EnableDocking(CBRS_ALIGN_ANY);
-    DockPane(&m_paneLog, AFX_IDW_DOCKBAR_BOTTOM);
+    m_tabCtrl.AddTab(&m_paneLog, _T("Log Output"));
 
-    // 전이 이력 패널 (Log와 탭 그룹)
-    if (!m_paneTransition.Create(_T("Transition Log"), this, CRect(0, 0, 200, 150),
-        TRUE, IDR_PANE_TRANSITION_LOG,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 전이 이력 패널
+    if (!m_paneTransition.Create(nullptr, _T("Transition Log"), dwStyle,
+        rect, this, IDR_PANE_TRANSITION_LOG))
     {
         TRACE0("Failed to create Transition Log Pane\n");
         return FALSE;
     }
-    m_paneTransition.EnableDocking(CBRS_ALIGN_ANY);
-    m_paneTransition.AttachToTabWnd(&m_paneLog, DM_SHOW, TRUE);
+    m_tabCtrl.AddTab(&m_paneTransition, _T("Transition Log"));
 
-    // 스레드 모니터 패널 (Log와 탭 그룹)
-    if (!m_paneThread.Create(_T("Thread Monitor"), this, CRect(0, 0, 200, 150),
-        TRUE, IDR_PANE_THREAD_MONITOR,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_BOTTOM,
-        AFX_CBRS_REGULAR_TABS, AFX_DEFAULT_DOCKING_PANE_STYLE))
+    // 스레드 모니터 패널
+    if (!m_paneThread.Create(nullptr, _T("Thread Monitor"), dwStyle,
+        rect, this, IDR_PANE_THREAD_MONITOR))
     {
         TRACE0("Failed to create Thread Monitor Pane\n");
         return FALSE;
     }
-    m_paneThread.EnableDocking(CBRS_ALIGN_ANY);
-    m_paneThread.AttachToTabWnd(&m_paneLog, DM_SHOW, TRUE);
+    m_tabCtrl.AddTab(&m_paneThread, _T("Thread Monitor"));
 
     return TRUE;
-}
-
-void CSeqMonitorFrame::setupVisualManager()
-{
-    // VS 2012 다크 테마 사용 (VS Code 스타일에 가장 가까운 MFC 기본 제공 테마)
-    CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerOffice2007));
-    CMFCVisualManagerOffice2007::SetStyle(CMFCVisualManagerOffice2007::Office2007_ObsidianBlack);
-    CDockingManager::SetDockingMode(DT_SMART);
-}
-
-void CSeqMonitorFrame::loadDockingLayout()
-{
-    // 레지스트리에서 이전 도킹 레이아웃 복원
-    LoadBarState(_T("YggdraSeqView_DockingLayout"));
-}
-
-void CSeqMonitorFrame::saveDockingLayout()
-{
-    // 현재 도킹 레이아웃을 레지스트리에 저장
-    SaveBarState(_T("YggdraSeqView_DockingLayout"));
 }
 
 // ============================================================================

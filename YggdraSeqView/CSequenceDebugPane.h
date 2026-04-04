@@ -34,7 +34,7 @@ namespace YggdraSeq
  * 디버그 모드에서 스텝 실행, 브레이크포인트, 변수 워치를 제공합니다.
  * 엔진의 setDebugMode(), addBreakpoint(), stepNext() 등과 연동합니다.
  */
-class AFX_EXT_CLASS CSequenceDebugPane : public CDockablePane
+class AFX_EXT_CLASS CSequenceDebugPane : public CWnd
 {
     DECLARE_DYNAMIC(CSequenceDebugPane)
 
