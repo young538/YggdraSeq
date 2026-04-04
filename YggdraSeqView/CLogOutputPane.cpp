@@ -23,6 +23,7 @@ BEGIN_MESSAGE_MAP(CLogOutputPane, CDockablePane)
     ON_WM_SIZE()
     ON_WM_PAINT()
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_LOG_LIST, &CLogOutputPane::OnCustomDraw)
+    ON_NOTIFY(LVN_GETDISPINFO, IDC_LOG_LIST, &CLogOutputPane::OnGetDispInfo)
 END_MESSAGE_MAP()
 
 CLogOutputPane::CLogOutputPane()
@@ -92,9 +93,9 @@ void CLogOutputPane::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
     case CDDS_ITEMPREPAINT:
     {
         int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
-        if (nItem >= 0 && nItem < static_cast<int>(m_allEntries.size()))
+        if (nItem >= 0 && nItem < static_cast<int>(m_filteredIndices.size()))
         {
-            const auto& entry = m_allEntries[nItem];
+            const auto& entry = m_allEntries[m_filteredIndices[nItem]];
             // 다크 테마 배경
             pLVCD->clrTextBk = RGB(30, 30, 30);
 
@@ -173,50 +174,32 @@ void CLogOutputPane::addLogEntry(
     if (m_allEntries.size() >= MAX_LOG_ENTRIES)
     {
         m_allEntries.pop_front();
-        // 리스트도 첫 행 삭제
-        if (m_listCtrl.GetItemCount() > 0)
-            m_listCtrl.DeleteItem(0);
+        // 필터 인덱스 보정: 인덱스 0 제거 후 나머지 1씩 감소
+        if (!m_filteredIndices.empty() && m_filteredIndices.front() == 0)
+            m_filteredIndices.erase(m_filteredIndices.begin());
+        for (auto& idx : m_filteredIndices)
+            --idx;
     }
 
     m_allEntries.push_back(entry);
 
-    // 필터를 통과하는 경우에만 리스트에 추가
+    // 필터를 통과하는 경우에만 필터 인덱스에 추가
     if (passesFilter(entry))
-    {
-        int nRow = m_listCtrl.GetItemCount();
+        m_filteredIndices.push_back(m_allEntries.size() - 1);
 
-        // 시간 포맷
-        auto timeT = std::chrono::system_clock::to_time_t(timestamp);
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            timestamp.time_since_epoch()) % 1000;
-        struct tm tmBuf;
-        localtime_s(&tmBuf, &timeT);
-        CString strTime;
-        strTime.Format(_T("%02d:%02d:%02d.%03d"), tmBuf.tm_hour, tmBuf.tm_min,
-            tmBuf.tm_sec, static_cast<int>(ms.count()));
+    // 가상 리스트: 항목 수만 갱신
+    m_listCtrl.SetItemCount(static_cast<int>(m_filteredIndices.size()));
 
-        m_listCtrl.InsertItem(nRow, strTime);
-
-        CString strThread;
-        strThread.Format(_T("T-%u"), threadId);
-        m_listCtrl.SetItemText(nRow, 1, strThread);
-        m_listCtrl.SetItemText(nRow, 2, CString(logLevelToString(level)));
-        m_listCtrl.SetItemText(nRow, 3, CString(source.c_str()));
-        m_listCtrl.SetItemText(nRow, 4, CString(message.c_str()));
-
-        // 자동 스크롤
-        if (m_autoScroll)
-        {
-            m_listCtrl.EnsureVisible(nRow, FALSE);
-        }
-    }
+    if (m_autoScroll && !m_filteredIndices.empty())
+        m_listCtrl.EnsureVisible(static_cast<int>(m_filteredIndices.size()) - 1, FALSE);
 }
 
 void CLogOutputPane::clearLog()
 {
     m_allEntries.clear();
+    m_filteredIndices.clear();
     if (m_listCtrl.GetSafeHwnd() != nullptr)
-        m_listCtrl.DeleteAllItems();
+        m_listCtrl.SetItemCount(0);
 }
 
 void CLogOutputPane::setLevelFilter(LogLevel minLevel)
@@ -248,39 +231,68 @@ void CLogOutputPane::rebuildFilteredList()
         return;
 
     m_listCtrl.SetRedraw(FALSE);
-    m_listCtrl.DeleteAllItems();
 
-    int nRow = 0;
-    for (const auto& entry : m_allEntries)
+    m_filteredIndices.clear();
+    for (size_t i = 0; i < m_allEntries.size(); ++i)
     {
-        if (!passesFilter(entry))
-            continue;
-
-        auto timeT = std::chrono::system_clock::to_time_t(entry.timestamp);
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            entry.timestamp.time_since_epoch()) % 1000;
-        struct tm tmBuf;
-        localtime_s(&tmBuf, &timeT);
-        CString strTime;
-        strTime.Format(_T("%02d:%02d:%02d.%03d"), tmBuf.tm_hour, tmBuf.tm_min,
-            tmBuf.tm_sec, static_cast<int>(ms.count()));
-
-        m_listCtrl.InsertItem(nRow, strTime);
-
-        CString strThread;
-        strThread.Format(_T("T-%u"), entry.threadId);
-        m_listCtrl.SetItemText(nRow, 1, strThread);
-        m_listCtrl.SetItemText(nRow, 2, CString(logLevelToString(entry.level)));
-        m_listCtrl.SetItemText(nRow, 3, CString(entry.source.c_str()));
-        m_listCtrl.SetItemText(nRow, 4, CString(entry.message.c_str()));
-
-        nRow++;
+        if (passesFilter(m_allEntries[i]))
+            m_filteredIndices.push_back(i);
     }
 
+    m_listCtrl.SetItemCount(static_cast<int>(m_filteredIndices.size()));
     m_listCtrl.SetRedraw(TRUE);
 
-    if (m_autoScroll && nRow > 0)
-        m_listCtrl.EnsureVisible(nRow - 1, FALSE);
+    if (m_autoScroll && !m_filteredIndices.empty())
+        m_listCtrl.EnsureVisible(static_cast<int>(m_filteredIndices.size()) - 1, FALSE);
+}
+
+void CLogOutputPane::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
+{
+    auto* pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+    LVITEM& item = pDispInfo->item;
+    int nItem = item.iItem;
+
+    if (nItem < 0 || nItem >= static_cast<int>(m_filteredIndices.size()))
+    {
+        *pResult = 0;
+        return;
+    }
+
+    const auto& entry = m_allEntries[m_filteredIndices[nItem]];
+
+    if (item.mask & LVIF_TEXT)
+    {
+        CString str;
+        switch (item.iSubItem)
+        {
+        case 0: // Time
+        {
+            auto timeT = std::chrono::system_clock::to_time_t(entry.timestamp);
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                entry.timestamp.time_since_epoch()) % 1000;
+            struct tm tmBuf;
+            localtime_s(&tmBuf, &timeT);
+            str.Format(_T("%02d:%02d:%02d.%03d"), tmBuf.tm_hour, tmBuf.tm_min,
+                tmBuf.tm_sec, static_cast<int>(ms.count()));
+            break;
+        }
+        case 1: // Thread
+            str.Format(_T("T-%u"), entry.threadId);
+            break;
+        case 2: // Level
+            str = CString(logLevelToString(entry.level));
+            break;
+        case 3: // Source
+            str = CString(entry.source.c_str());
+            break;
+        case 4: // Message
+            str = CString(entry.message.c_str());
+            break;
+        }
+        _tcsncpy_s(item.pszText, item.cchTextMax, str, _TRUNCATE);
+    }
+
+    *pResult = 0;
 }
 
 bool CLogOutputPane::exportToFile(const std::string& filePath) const

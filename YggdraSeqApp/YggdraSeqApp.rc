@@ -13,6 +13,44 @@
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
+// Icon
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\YggdraSeqApp.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+// Menu
+IDR_MAINFRAME MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "&Sequence"
+    BEGIN
+        MENUITEM "&Run\tF5",                    ID_SEQ_RUN
+        MENUITEM "&Pause\tF6",                  ID_SEQ_PAUSE
+        MENUITEM "&Stop\tF7",                   ID_SEQ_STOP
+        MENUITEM SEPARATOR
+        MENUITEM "&EMO\tF12",                   ID_SEQ_EMO
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Process Mimic",              ID_ACTIVITY_PROCESS
+        MENUITEM "&Debug",                      ID_ACTIVITY_DEBUG
+        MENUITEM "&Settings",                   ID_ACTIVITY_SETTINGS
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// Accelerator
+IDR_MAINFRAME ACCELERATORS
+BEGIN
+    VK_F5,          ID_SEQ_RUN,             VIRTKEY, NOINVERT
+    VK_F6,          ID_SEQ_PAUSE,           VIRTKEY, NOINVERT
+    VK_F7,          ID_SEQ_STOP,            VIRTKEY, NOINVERT
+    VK_F12,         ID_SEQ_EMO,             VIRTKEY, NOINVERT
+END
+
+/////////////////////////////////////////////////////////////////////////////
 // 문자열 테이블
 STRINGTABLE
 BEGIN

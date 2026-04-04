@@ -124,6 +124,7 @@ protected:
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnPaint();
     afx_msg void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 
     DECLARE_MESSAGE_MAP()
 
@@ -135,6 +136,7 @@ private:
     CListCtrl m_listCtrl;              ///< 로그 리스트 컨트롤
 
     std::deque<LogEntry> m_allEntries;  ///< 전체 로그 항목 (최대 MAX_LOG_ENTRIES)
+    std::vector<size_t> m_filteredIndices; ///< 필터를 통과한 항목의 m_allEntries 인덱스
 
     // 필터 상태
     LogLevel m_minLevelFilter;          ///< 최소 표시 레벨 (기본: Trace)
