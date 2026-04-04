@@ -1,0 +1,39 @@
+// YggdraSeqApp.rc - YggdraSeqApp 리소스 파일
+
+#include "resource.h"
+#include "afxres.h"
+
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NEXT_RESOURCE_VALUE        201
+#define _APS_NEXT_COMMAND_VALUE         40001
+#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_SYMED_VALUE           201
+#endif
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// 문자열 테이블
+STRINGTABLE
+BEGIN
+    IDR_MAINFRAME           "YggdraSeq HMI - Semiconductor Visual Inspection Equipment"
+    ID_STATUSBAR_MODE       "Mode"
+    ID_STATUSBAR_INSPECT    "Inspect"
+    ID_STATUSBAR_HANDLER    "Handler"
+    ID_STATUSBAR_THREADS    "Threads"
+    ID_STATUSBAR_ERRORS     "Errors"
+    ID_STATUSBAR_INTERLOCKS "Interlocks"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+// 툴팁 문자열 테이블
+STRINGTABLE
+BEGIN
+    ID_SEQ_RUN              "Run\nStart sequence execution"
+    ID_SEQ_PAUSE            "Pause\nPause sequence execution"
+    ID_SEQ_STOP             "Stop\nStop sequence execution"
+    ID_SEQ_EMO              "EMO\nEmergency Stop - Immediately halt all operations"
+    ID_SEQ_MODE_AUTO        "Auto\nAutomatic mode"
+    ID_SEQ_MODE_MANUAL      "Manual\nManual step mode"
+    ID_SEQ_MODE_DEBUG       "Debug\nDebug mode with breakpoints"
+END
