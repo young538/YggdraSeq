@@ -190,10 +190,19 @@ void CProcessMimicView::drawInspectionArea(CDC* pDC, const CRect& areaRect)
     drawDevice(pDC, CRect(left + 20 + devW, top + 80, left + 20 + devW * 2, top + 80 + devH),
         _T("LED"), strLed, RGB(255, 220, 50), ledActive, m_violationDevice == "LED");
 
-    // 연결선 (LDR -> STG -> CAM)
-    drawConnection(pDC, CPoint(left + 10 + devW, top + 35), CPoint(left + 10, top + 100), ldrActive);
-    drawConnection(pDC, CPoint(left + 10 + devW / 2, top + 60 + devH),
-        CPoint(left + 20 + devW + devW / 2, top + 10), stgActive);
+    // 연결선 (흐름: LDR → CAM, LDR → STG, STG → LED, CAM → LED)
+    // LDR 오른쪽 → CAM 왼쪽 (수평)
+    drawConnection(pDC, CPoint(left + 10 + devW, top + 10 + devH / 2),
+        CPoint(left + 20 + devW, top + 10 + devH / 2), ldrActive);
+    // LDR 아래 → STG 위 (수직)
+    drawConnection(pDC, CPoint(left + 10 + devW / 2, top + 10 + devH),
+        CPoint(left + 10 + devW / 2, top + 80), stgActive);
+    // STG 오른쪽 → LED 왼쪽 (수평)
+    drawConnection(pDC, CPoint(left + 10 + devW, top + 80 + devH / 2),
+        CPoint(left + 20 + devW, top + 80 + devH / 2), ledActive);
+    // CAM 아래 → LED 위 (수직)
+    drawConnection(pDC, CPoint(left + 20 + devW + devW / 2, top + 10 + devH),
+        CPoint(left + 20 + devW + devW / 2, top + 80), camActive);
 
     // 검사 결과 카운터
     CRect counterRect(left + 30 + devW * 2, top + 10, areaRect.right - 5, top + 10 + devH * 2 + 30);

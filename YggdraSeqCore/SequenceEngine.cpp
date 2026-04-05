@@ -197,6 +197,13 @@ ErrorCode SequenceEngine::abort()
         m_workerThread->join();
     }
 
+    // 현재 상태의 onExit()를 호출하여 리소스 정리
+    if (m_currentState != nullptr)
+    {
+        m_currentState->onExit();
+        m_currentState = nullptr;
+    }
+
     setStatus(EngineStatus::Aborted);
     m_logger->info("SequenceEngine", "Sequence aborted");
 

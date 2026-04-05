@@ -199,9 +199,17 @@ void CMainFrame::layoutChildren()
     if (clientRect.IsRectEmpty())
         return;
 
-    // 사용 가능한 클라이언트 영역 계산 (메뉴/상태바 제외)
+    // 사용 가능한 클라이언트 영역 계산 (메뉴 제외)
     CRect availRect;
     RepositionBars(0, 0xFFFF, AFX_IDW_PANE_FIRST, CWnd::reposQuery, &availRect);
+
+    // 상태바 높이를 명시적으로 제외 (RepositionBars가 정확하지 않을 수 있음)
+    if (m_statusBar.GetSafeHwnd() != nullptr && m_statusBar.IsWindowVisible())
+    {
+        CRect sbRect;
+        m_statusBar.GetWindowRect(sbRect);
+        availRect.bottom -= sbRect.Height();
+    }
 
     int activityBarWidth = CActivityBar::BAR_WIDTH;
     int commandBarHeight = COMMAND_BAR_HEIGHT;
@@ -411,6 +419,14 @@ void CMainFrame::OnSeqRun()
 {
     if (!m_sequencesInitialized)
         return;
+
+    // 정지/완료 상태에서 재시작 시 하드웨어 초기화
+    EngineStatus inspStatus = m_pInspectionEngine->getStatus();
+    if (inspStatus == EngineStatus::Aborted || inspStatus == EngineStatus::Complete ||
+        inspStatus == EngineStatus::Error)
+    {
+        m_pHardware->reset();
+    }
 
     // 양 엔진 동시 시작
     m_pInspectionEngine->run();
